@@ -9,13 +9,15 @@ class RemoteBackup
 {
     private $connection = null;
 
-    public function __construct($configName)
+    public function __construct($configName = 'default')
     {
         $this->params = $this->readConfig($configName);
     }
 
     public function backup()
     {
+        // print_r($this->params);
+        // return;
         if ($this->connect()) {
             $this->backupDB();
             $this->removeScript();
@@ -26,7 +28,7 @@ class RemoteBackup
 
     private function backupDB()
     {
-        ssh2_scp_send($this->connection, './mysqldump.php', './mysqldump.php', 0644);
+        ssh2_scp_send($this->connection, './src/mysqldump.php', './mysqldump.php', 0644);
         $stream = ssh2_exec(
             $this->connection,
             'php mysqldump.php project_path='
@@ -77,6 +79,14 @@ class RemoteBackup
         return ssh2_sftp_unlink($sftp, $dumpName);
     }
 
+    private function getPathToDump()
+    {
+        if ($this->params['project_path'][0] == '~') {
+            return '.' . substr($this->params['project_path'], 1) . '/' . $this->params['dump_name'];
+        }
+        return './' . $this->params['project_path'] . '/' . $this->params['dump_name'];
+    }
+
     private function connect()
     {
         $this->connection = ssh2_connect($this->params['host'], $this->params['port']);
@@ -90,6 +100,24 @@ class RemoteBackup
 
     private function rsync()
     {
+        // echo $this->params['backup_path'], PHP_EOL;
+        // if (!is_dir($this->params['backup_path'])) {
+        //     shell_exec('mkdir ' . $this->params['backup_path']);
+        // }
+        // mkdir($this->params['backup_path'], 0644, true);
+        // mkdir($this->params['backup_path']);
+        // print_r($this->params);
+        // echo $this->getRsyncCommand(), PHP_EOL;
+        // return;
+        shell_exec($this->getRsyncCommand());
+    }
+
+    private function getRsyncCommand()
+    {
+        // echo $this->params['backup_path'], PHP_EOL;
+        return 'rsync -aLz --delete --exclude-from exclude.txt -e "ssh -p ' . $this->params['port'] . '" '
+            . $this->params['user'] . '@' . $this->params['host'] . ':' . $this->params['project_path'] . '/ '
+            . $this->params['backup_path'] . '/' . $this->params['project_name'];
     }
 
     private function readConfig($configName)
