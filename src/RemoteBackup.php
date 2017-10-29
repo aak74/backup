@@ -16,11 +16,7 @@ class RemoteBackup
 
     public function backup()
     {
-<<<<<<< HEAD:src/RemoteBackup.php
         // print_r($this->params);
-=======
-        print_r($this->params);
->>>>>>> 4f8c63112229e4bf8f167a3ad31ab9ef1e4d0918:src/RemoteBackup.php
         // return;
         if ($this->connect()) {
             // $this->backupDB();
@@ -104,7 +100,6 @@ class RemoteBackup
 
     private function rsync()
     {
-<<<<<<< HEAD:src/RemoteBackup.php
         // echo $this->params['backup_path'], PHP_EOL;
         // if (!is_dir($this->params['backup_path'])) {
         //     shell_exec('mkdir ' . $this->params['backup_path']);
@@ -113,16 +108,6 @@ class RemoteBackup
         // mkdir($this->params['backup_path']);
         // print_r($this->params);
         // echo $this->getRsyncCommand(), PHP_EOL;
-=======
-        echo $this->params['backup_path'], PHP_EOL;
-        if (!is_dir($this->params['backup_path'])) {
-            shell_exec('mkdir ' . $this->params['backup_path']);
-        }
-        // mkdir($this->params['backup_path'], 0644, true);
-        // mkdir($this->params['backup_path']);
-        // print_r($this->params);
-        echo $this->getRsyncCommand(), PHP_EOL;
->>>>>>> 4f8c63112229e4bf8f167a3ad31ab9ef1e4d0918:src/RemoteBackup.php
         // return;
         shell_exec($this->getRsyncCommand());
     }
@@ -130,11 +115,7 @@ class RemoteBackup
     private function getRsyncCommand()
     {
         // echo $this->params['backup_path'], PHP_EOL;
-<<<<<<< HEAD:src/RemoteBackup.php
         return 'rsync -aLz --delete --exclude-from exclude.txt -e "ssh -p ' . $this->params['port'] . '" '
-=======
-        return 'rsync -avz --delete --exclude-from exclude.txt -e "ssh -p ' . $this->params['port'] . '" '
->>>>>>> 4f8c63112229e4bf8f167a3ad31ab9ef1e4d0918:src/RemoteBackup.php
             . $this->params['user'] . '@' . $this->params['host'] . ':' . $this->params['project_path'] . '/ '
             . $this->params['backup_path'] . '/' . $this->params['project_name'];
     }
