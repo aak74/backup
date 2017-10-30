@@ -17,7 +17,7 @@ class RemoteBackupTest extends \PHPUnit\Framework\TestCase
         $method = new \ReflectionMethod('\App\RemoteBackup', 'getPathToDump');
         $method->setAccessible(true);
         $this->assertEquals(
-            './www/some-project/db.sql',
+            '/var/www/html/db.sql',
             $method->invoke($this->testingClass)
         );
     }
@@ -30,7 +30,7 @@ class RemoteBackupTest extends \PHPUnit\Framework\TestCase
         $method = new \ReflectionMethod('\App\RemoteBackup', 'getRsyncCommand');
         $method->setAccessible(true);
         $this->assertEquals(
-            'rsync -aLz --delete --exclude-from exclude.txt -e "ssh -p 22" user@example.com:~/www/some-project/ ~/remote-backup/some-project',
+            'rsync -aLz --delete --exclude-from exclude.txt -e "ssh -p 22" user@example.com:/var/www/html/ /mnt/b/backup/some-project',
             $method->invoke($this->testingClass)
         );
     }

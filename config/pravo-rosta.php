@@ -5,7 +5,7 @@ return array_merge(
         'host' => 'pravo-rosta.ru',
         'user' => 'bitrix',
         'port' => '22',
-        'project_path' => '~/www',
+        'project_path' => '/home/bitrix/www',
         'project_name' => 'pravo-rosta',
         'dump_name' => 'db.sql',
     ]

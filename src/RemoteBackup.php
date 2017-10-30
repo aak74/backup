@@ -8,6 +8,7 @@ namespace App;
 class RemoteBackup
 {
     private $connection = null;
+    private $sftp = null;
 
     public function __construct($configName = 'default')
     {
@@ -16,13 +17,17 @@ class RemoteBackup
 
     public function backup()
     {
-        // print_r($this->params);
-        // return;
         if ($this->connect()) {
+            echo 'connected', PHP_EOL;
+            echo 'DB backup started', PHP_EOL;
             $this->backupDB();
+            echo 'DB backup finished', PHP_EOL;
             $this->removeScript();
+            echo 'DB backup script removed', PHP_EOL;
             $this->rsync();
+            echo 'Files synced', PHP_EOL;
             $this->removeDump();
+            echo 'DB dump removed', PHP_EOL;
         }
     }
 
@@ -58,7 +63,7 @@ class RemoteBackup
     private function getFileSize()
     {
         $sftp = ssh2_sftp($this->connection);
-        $dumpName = './' . $this->params['project_path'] . '/' . $this->params['dump_name'];
+        $dumpName = $this->params['project_path'] . '/' . $this->params['dump_name'];
         $stat = ssh2_sftp_stat($sftp, $dumpName);
         return ($stat && $stat['size'] > 0)
             ? $stat['size']
@@ -67,16 +72,19 @@ class RemoteBackup
 
     private function removeScript()
     {
-        $sftp = ssh2_sftp($this->connection);
-        ssh2_sftp_unlink($sftp, './mysqldump.php');
+        ssh2_sftp_unlink($this->getSFTP(), './mysqldump.php');
     }
 
     private function removeDump()
     {
-        $sftp = ssh2_sftp($this->connection);
-        $dumpName = './' . $this->params['project_path'] . '/' . $this->params['dump_name'];
-        // echo $dumpName, PHP_EOL;
-        return ssh2_sftp_unlink($sftp, $dumpName);
+        return ssh2_sftp_unlink($this->getSFTP(), $this->getPathToDump());
+    }
+    
+    private function getSFTP()
+    {
+        return ($this->sftp)
+            ? $this->sftp
+            : $this->sftp = ssh2_sftp($this->connection);
     }
 
     private function getPathToDump()
@@ -84,7 +92,7 @@ class RemoteBackup
         if ($this->params['project_path'][0] == '~') {
             return '.' . substr($this->params['project_path'], 1) . '/' . $this->params['dump_name'];
         }
-        return './' . $this->params['project_path'] . '/' . $this->params['dump_name'];
+        return $this->params['project_path'] . '/' . $this->params['dump_name'];
     }
 
     private function connect()
@@ -100,21 +108,11 @@ class RemoteBackup
 
     private function rsync()
     {
-        // echo $this->params['backup_path'], PHP_EOL;
-        // if (!is_dir($this->params['backup_path'])) {
-        //     shell_exec('mkdir ' . $this->params['backup_path']);
-        // }
-        // mkdir($this->params['backup_path'], 0644, true);
-        // mkdir($this->params['backup_path']);
-        // print_r($this->params);
-        // echo $this->getRsyncCommand(), PHP_EOL;
-        // return;
         shell_exec($this->getRsyncCommand());
     }
 
     private function getRsyncCommand()
     {
-        // echo $this->params['backup_path'], PHP_EOL;
         return 'rsync -aLz --delete --exclude-from exclude.txt -e "ssh -p ' . $this->params['port'] . '" '
             . $this->params['user'] . '@' . $this->params['host'] . ':' . $this->params['project_path'] . '/ '
             . $this->params['backup_path'] . '/' . $this->params['project_name'];
