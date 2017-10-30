@@ -108,14 +108,20 @@ class RemoteBackup
 
     private function rsync()
     {
-        shell_exec($this->getRsyncCommand());
+        $rsyncCommand = $this->getRsyncCommand();
+        echo 'Rsync started', PHP_EOL;
+        echo $rsyncCommand, PHP_EOL;
+        shell_exec($rsyncCommand);
     }
 
     private function getRsyncCommand()
     {
         return 'rsync -aLz --delete --exclude-from exclude.txt -e "ssh -p ' . $this->params['port'] . '" '
-            . $this->params['user'] . '@' . $this->params['host'] . ':' . $this->params['project_path'] . '/ '
-            . $this->params['backup_path'] . '/' . $this->params['project_name'];
+            . $this->params['user'] . '@' 
+            . $this->params['host'] . ':' 
+            . $this->params['project_path'] . '/ '
+            . $this->params['backup_path'] . '/' 
+            . $this->params['project_name'];
     }
 
     private function readConfig($configName)
