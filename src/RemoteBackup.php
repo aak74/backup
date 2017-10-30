@@ -19,10 +19,10 @@ class RemoteBackup
         // print_r($this->params);
         // return;
         if ($this->connect()) {
-            // $this->backupDB();
-            // $this->removeScript();
+            $this->backupDB();
+            $this->removeScript();
             $this->rsync();
-            // $this->removeDump();
+            $this->removeDump();
         }
     }
 
