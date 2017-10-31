@@ -36,7 +36,7 @@ class RemoteBackup
         ssh2_scp_send($this->connection, './src/mysqldump.php', './mysqldump.php', 0644);
         $stream = ssh2_exec(
             $this->connection,
-            'php mysqldump.php project_path='
+            $this->params['php'] . ' mysqldump.php project_path='
             . $this->params['project_path']
             . ' dump_name=' . $this->params['dump_name']
         );

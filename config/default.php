@@ -7,4 +7,5 @@ return [
     'project_path' => '/var/www/html',
     'project_name' => 'some-project',
     'dump_name' => 'db.sql',
+    'php' => 'php'
 ];
