@@ -27,5 +27,5 @@ $connection = $connections['value']['default'];
 $login = $connection['login'];
 $password = $connection['password'];
 $db = $connection['database'];
-shell_exec("mysqldump -u $login -p$password $db > " . __DIR__ . "/" . $params['dump_name']);
+shell_exec("mysqldump -u $login -p\"$password\" $db > " . __DIR__ . "/" . $params['dump_name']);
 exit(0);
