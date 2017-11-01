@@ -7,5 +7,7 @@ return [
     'project_path' => '/var/www/html',
     'project_name' => 'some-project',
     'dump_name' => 'db.sql',
-    'php' => 'php'
+    'php' => 'php',
+    'public_key' => '~/.ssh/id_rsa.pub',
+    'private_key' => '~/.ssh/id_rsa'
 ];

@@ -28,16 +28,19 @@ class RemoteBackup
             echo 'Files synced', PHP_EOL;
             $this->removeDump();
             echo 'DB dump removed', PHP_EOL;
+        } else {
+            echo 'Can`t connect to host', PHP_EOL;
         }
     }
 
     private function backupDB()
     {
-        ssh2_scp_send($this->connection, './src/mysqldump.php', './mysqldump.php', 0644);
+        $scriptPath = $this->params['project_path'] . '/mysqldump.php';
+        ssh2_scp_send($this->connection, './src/mysqldump.php', $scriptPath, 0644);
         $stream = ssh2_exec(
             $this->connection,
-            $this->params['php'] . ' mysqldump.php project_path='
-            . $this->params['project_path']
+            $this->params['php'] . ' ' . $scriptPath 
+            // . ' project_path=' . $this->params['project_path']
             . ' dump_name=' . $this->params['dump_name']
         );
         $errorStream = ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);
@@ -98,11 +101,18 @@ class RemoteBackup
     private function connect()
     {
         $this->connection = ssh2_connect($this->params['host'], $this->params['port']);
-        return ssh2_auth_pubkey_file(
+        if (empty($this->params['password'])) {
+            return ssh2_auth_pubkey_file(
+                $this->connection,
+                $this->params['user'],
+                $this->params['public_key'],
+                $this->params['private_key']
+            );
+        }
+        return ssh2_auth_password(
             $this->connection,
             $this->params['user'],
-            '~/.ssh/id_rsa.pub',
-            '~/.ssh/id_rsa'
+            $this->params['password']
         );
     }
 
@@ -116,7 +126,12 @@ class RemoteBackup
 
     private function getRsyncCommand()
     {
-        return 'rsync -aLz --delete --exclude-from exclude.txt -e "ssh -p ' . $this->params['port'] . '" '
+        $prefix = (empty($this->params['password']))
+            ? ''
+            : 'sshpass -p ' . $this->params['password'] . ' ';
+            
+        return $prefix . 'rsync -aLz --delete --exclude-from exclude.txt -e "ssh -p '
+            . $this->params['port'] . '" '
             . $this->params['user'] . '@' 
             . $this->params['host'] . ':' 
             . $this->params['project_path'] . '/ '
@@ -126,6 +141,10 @@ class RemoteBackup
 
     private function readConfig($configName)
     {
-        return require('./config/' . $configName . '.php');
+        $filename = './config/' . $configName . '.php';
+        if (\is_file($filename)) {
+            return require($filename);
+        }
+        throw new \Exception("Config file $filename doesn`t exists", 1);
     }
 }
