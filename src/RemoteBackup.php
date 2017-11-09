@@ -19,7 +19,9 @@ class RemoteBackup
     {
         if ($this->connect()) {
             echo 'connected', PHP_EOL;
-            echo 'DB backup started', PHP_EOL;
+            // echo memory_get_usage();
+            // memory_get_usage();
+            echo 'DB backup started' . PHP_EOL;
             $this->backupDB();
             echo 'DB backup finished', PHP_EOL;
             $this->removeScript();
@@ -28,9 +30,9 @@ class RemoteBackup
             echo 'Files synced', PHP_EOL;
             $this->removeDump();
             echo 'DB dump removed', PHP_EOL;
-        } else {
-            echo 'Can`t connect to host', PHP_EOL;
+            return;
         }
+        // echo 'Can`t connect to host', PHP_EOL;
     }
 
     private function backupDB()
@@ -75,12 +77,12 @@ class RemoteBackup
 
     private function removeScript()
     {
-        ssh2_sftp_unlink($this->getSFTP(), './mysqldump.php');
+        return ssh2_sftp_unlink($this->getSFTP(), $this->getPath('mysqldump.php'));
     }
 
     private function removeDump()
     {
-        return ssh2_sftp_unlink($this->getSFTP(), $this->getPathToDump());
+        return ssh2_sftp_unlink($this->getSFTP(), $this->getPath($this->params['dump_name']));
     }
     
     private function getSFTP()
@@ -90,12 +92,12 @@ class RemoteBackup
             : $this->sftp = ssh2_sftp($this->connection);
     }
 
-    private function getPathToDump()
+    private function getPath($filename)
     {
         if ($this->params['project_path'][0] == '~') {
-            return '.' . substr($this->params['project_path'], 1) . '/' . $this->params['dump_name'];
+            return '.' . substr($this->params['project_path'], 1) . '/' . $filename;
         }
-        return $this->params['project_path'] . '/' . $this->params['dump_name'];
+        return $this->params['project_path'] . '/' . $filename;
     }
 
     private function connect()

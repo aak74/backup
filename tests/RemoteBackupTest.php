@@ -12,13 +12,13 @@ class RemoteBackupTest extends \PHPUnit\Framework\TestCase
     /**
      * Должен возвращаться правильный путь для удаления
      */
-    public function testGetPathToDump()
+    public function testGetPath()
     {
-        $method = new \ReflectionMethod('\App\RemoteBackup', 'getPathToDump');
+        $method = new \ReflectionMethod('\App\RemoteBackup', 'getPath');
         $method->setAccessible(true);
         $this->assertEquals(
             '/var/www/html/db.sql',
-            $method->invoke($this->testingClass)
+            $method->invoke($this->testingClass, 'db.sql')
         );
     }
 
