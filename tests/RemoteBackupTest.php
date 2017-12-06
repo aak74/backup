@@ -34,4 +34,17 @@ class RemoteBackupTest extends \PHPUnit\Framework\TestCase
             $method->invoke($this->testingClass)
         );
     }
+    /**
+     * Должен возвращаться правильная команда для backup DB
+     */
+    public function testGetDumpCommand()
+    {
+        $method = new \ReflectionMethod('\App\RemoteBackup', 'getDumpCommand');
+        $method->setAccessible(true);
+        $params = ['database' => 'dbname', 'login' => 'login', 'password' => 'password'];
+        $this->assertEquals(
+            'mysqldump -u login -p"password" dbname > /var/www/html/db.sql',
+            $method->invoke($this->testingClass, $params)
+        );
+    }
 }

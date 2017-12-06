@@ -20,12 +20,13 @@ class RemoteBackup
         if ($this->connect()) {
             echo 'connected', PHP_EOL;
             // echo memory_get_usage();
-            // memory_get_usage();
+            memory_get_usage();
             echo 'DB backup started' . PHP_EOL;
-            $this->backupDB();
+            $params = $this->getDbCredentials();
+            $dumpCommand = $this->getDumpCommand($params);
+            echo $dumpCommand, PHP_EOL;
+            $this->backupDB($dumpCommand);
             echo 'DB backup finished', PHP_EOL;
-            $this->removeScript();
-            echo 'DB backup script removed', PHP_EOL;
             $this->rsync();
             echo 'Files synced', PHP_EOL;
             $this->removeDump();
@@ -35,16 +36,41 @@ class RemoteBackup
         // echo 'Can`t connect to host', PHP_EOL;
     }
 
-    private function backupDB()
+    private function getDbCredentials() 
     {
-        $scriptPath = $this->params['project_path'] . '/mysqldump.php';
-        ssh2_scp_send($this->connection, './src/mysqldump.php', $scriptPath, 0644);
+        $sftp = ssh2_sftp($this->connection);
+        $remoteFile = $this->params['project_path'] . '/bitrix/.settings.php';
+        $stream = fopen("ssh2.sftp://$sftp$remoteFile", 'r');
+        $content = stream_get_contents($stream);
+        fclose($stream);
+        $config = include("data://," . $content);
+        $connections = $config['connections'];
+        if (empty($connections)) {
+            // в некоторых версиях раздел connections вложен в exception_handling
+            $connections = $config['exception_handling']['connections'];
+        }
+        if (empty($connections)) {
+            throw new \Exception('Connection section not found', 1);
+        }
+        return $connections['value']['default'];
+    }
+    
+    private function getDumpCommand(array $params)
+    {
+        return 'mysqldump -u '
+            . $params['login'] 
+            . ' -p"' . $params['password'] . '" ' . $params['database'] 
+            . ' > '
+            . $this->params['project_path'] . '/' . $this->params['dump_name'];
+    }
+    
+    private function backupDB($dumpCommand)
+    {
         $stream = ssh2_exec(
             $this->connection,
-            $this->params['php'] . ' ' . $scriptPath 
-            // . ' project_path=' . $this->params['project_path']
-            . ' dump_name=' . $this->params['dump_name']
+            $dumpCommand
         );
+
         $errorStream = ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);
         stream_set_blocking($errorStream, true);
         stream_set_blocking($stream, true);
@@ -73,11 +99,6 @@ class RemoteBackup
         return ($stat && $stat['size'] > 0)
             ? $stat['size']
             : false;
-    }
-
-    private function removeScript()
-    {
-        return ssh2_sftp_unlink($this->getSFTP(), $this->getPath('mysqldump.php'));
     }
 
     private function removeDump()
