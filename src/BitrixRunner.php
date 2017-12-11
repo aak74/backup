@@ -5,13 +5,14 @@ namespace Backup;
 /**
  * Удаленный backuper
  */
-class RemoteBackup
+class BitrixRunner
 {
     private $connection = null;
     private $sftp = null;
 
     public function backup()
     {
+        $config = new ConfigReader();
         if ($this->connect()) {
             echo 'connected', PHP_EOL;
             // echo memory_get_usage();
