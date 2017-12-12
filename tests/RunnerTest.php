@@ -38,46 +38,61 @@ class RunnerTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
+     * @test
      * Должен возвращаться правильный путь последней копии
      */
-    public function testCalcLastPath()
+    public function calcLastPath()
     {
-        // $stub = $this->createMock(\Backup\Runner::class, $this->defaultParams);
-        // Configure the stub.
-        $root = vfsStream::setup('exampleDir');
-        $structure = [
-                'Core' => [
-                    'AbstractFactory' => [
-                        'test.php' => 'some text content',
-                        'other.php' => 'Some more text content',
-                        'Invalid.csv' => 'Something else',
-                    ],
-                'AnEmptyFolder' => [],
-                'badlocation.php' => 'some bad content',
-            ]
-        ];
-        vfsStream::create($structure, $root);
+        // $list = \glob($dir . '*.*');
+        // $dir = vfsStream::url('exampleDir');
+        // print_r($dir);
+        // if (is_dir($dir)) {
+        //     if ($dh = opendir($dir)) {
+        //         while (($file = readdir($dh)) !== false) {
+        //             echo "файл: $file : тип: " . filetype($dir . $file) . "\n";
+        //         }
+        //         closedir($dh);
+        //     }
+        // }
 
-        $reflection = new \ReflectionObject(\Backup\Runner::class);
-        $method = $reflection->getMethod('getAllFolders');
+        $reflection = new \ReflectionObject($this->testingClass);
+        $method = $reflection->getMethod('getLastPath');
         $method->setAccessible(true);
-        // $method = $reflection->getMethod('calcLastPath');
-        // $method->setAccessible(true);
 
-        // $stub->method('getAllFolders')
-        //     ->will(['2017-12-01', '2017-12-02','2017-12-07']);
+        $structure = [
+            '2017-12-04' => [
+                'ok.txt' => 'fine'
+            ],
+            '2017-12-05' => [],
+            '2017-12-06' => [],
+            '2099-12-31' => [],
+            '2100-12-31' => 'Something else',
+        ];
 
-        // $class = $this->getMockBuilder(\Backup\Runner::class, $this->defaultParams)
-        //     ->setMethods(['mockMethod'])
-        //     ->getMock();
-        //
-        // $class->expects($this->any())
-        //     ->method('mockMethod')
-        //     ->will($this->returnValue('Hey!'));
+        $root = vfsStream::setup('/', null, $structure);
+        $folder = $root->url();
 
         $this->assertEquals(
-            '/mnt/b/backup/some-project/2017-12-07',
-            $method->invoke($this->testingClass)
+            '2017-12-06',
+            $method->invoke($this->testingClass, $folder)
+        );
+
+        $root = vfsStream::setup('/', null, $structure);
+        $folder = $root->url();
+        $structure['2017-1211'] = [];
+
+        $this->assertEquals(
+            '2017-12-06',
+            $method->invoke($this->testingClass, $folder)
+        );
+
+        $structure['2017-12-11 00:00:00'] = [];
+        $root = vfsStream::setup('/', null, $structure);
+        $folder = $root->url();
+
+        $this->assertEquals(
+            '2017-12-11 00:00:00',
+            $method->invoke($this->testingClass, $folder)
         );
     }
 

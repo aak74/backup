@@ -2,6 +2,8 @@
 
 namespace Backup;
 
+use Carbon\Carbon;
+
 /**
  * Запускатель backup
  */
@@ -33,14 +35,42 @@ class Runner
         return $this->sourcePath;
     }
 
-    private function calcLastPath()
+    /**
+     * Возвращает последний путь с актуальной копией
+     */
+    private function getLastPath($folder)
     {
-        return '2017-12-07';
+        $folders = $this->getAllFoldersLtTommorow($folder);
+        print_r($folders);
+        if (count($folders)) {
+            return current($folders);
+        }
+        return false;
     }
 
-    private function getAllFolders()
+    /**
+     * Возвращает все папки в каталоге назначения,
+     * имя которых меньше завтрашнего дня
+     */
+    private function getAllFoldersLtTommorow($folder)
     {
-        return '2017-12-07';
+        $files = array_diff(scandir($folder, 1), ['..', '.']);
+        $tomorrow = Carbon::tomorrow();
+        return array_filter($files, function ($file) use ($folder, $tomorrow) {
+            if (!is_dir($folder . $file)) {
+                return false;
+            }
+            try {
+                $dt = Carbon::parse($file);
+            } catch (\Exception $e) {
+                return false;
+            }
+
+            if ($dt->gte($tomorrow)) {
+                return false;
+            }
+            return true;
+        });
     }
 
     private function getPath($filename)
