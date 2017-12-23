@@ -1,5 +1,6 @@
 <?php
 
-require_once('src/RemoteBackup.php');
-$backup = new \App\RemoteBackup($argv[1]);
+require_once('./src/bootstrap.php');
+$reader = new \Backup\ConfigReader('dvagruza');
+$backup = new \Backup\Runner($reader->config);
 $backup->backup();

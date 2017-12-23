@@ -9,39 +9,66 @@ use Carbon\Carbon;
  */
 class Runner
 {
+    const STATUS_START = 0;
+    const STATUS_FINISH = 1;
+
     public function __construct(array $params)
     {
         $this->params = $params;
-
+        $this->params['backup_folder'] = $this->params['backup_path'] . DIRECTORY_SEPARATOR . $this->params['project_name'];
     }
 
     public function backup()
     {
+        print_r($this->params);
+        $this->getSourcePath();
         $this->calcDestinationPath();
-        $this->copyAl();
-        $this->calcSourcePath();
+        if ($this->sourcePath) {
+            $this->copyWithHardLinks();
+        }
+        return;
         $this->rsync();
         $this->removeWastedCopy();
     }
 
+    /**
+     * Вычисляется путь к папке, в которую будет копироваться backup
+     */
     private function calcDestinationPath()
     {
-
+        return Carbon::now();
     }
 
-    private function calcSourcePath()
+    /**
+     * Возвращается путь внешнего источника,
+     * из которого будут синхронизироваться файлы
+     */
+    private function getSourcePath()
     {
         $this->sourcePath = $this->params['project_path'];
         return $this->sourcePath;
     }
 
     /**
-     * Возвращает последний путь с актуальной копией
+     * Запускается внешний скрипт копирования с хардлинками
+     */
+    private function copyWithHardLinks()
+    {
+        shell_exec('copyWithHardLinks.sh '
+            . $this->getLastPath($this->params['backup_folder'])
+            . ' ' . $this->destinationPath);
+    }
+
+    /**
+     * Возвращает последний путь с последней копией6
+     * из которого будет скопирована предыдущая копия с хардлинками
      */
     private function getLastPath($folder)
     {
+        // echo Carbon::now();
+
         $folders = $this->getAllFoldersLtTommorow($folder);
-        print_r($folders);
+        // print_r($folders);
         if (count($folders)) {
             return current($folders);
         }
@@ -76,16 +103,20 @@ class Runner
     private function getPath($filename)
     {
         if ($this->params['project_path'][0] == '~') {
-            return '.' . substr($this->params['project_path'], 1) . '/' . $filename;
+            return '.' . substr($this->params['project_path'], 1) . DIRECTORY_SEPARATOR . $filename;
         }
-        return $this->params['project_path'] . '/' . $filename;
+        return $this->params['project_path'] . DIRECTORY_SEPARATOR . $filename;
     }
+
+    /**
+     * Запускает синхронизацию в нужную папку из внешнего источника
+     */
     private function rsync()
     {
         $rsyncCommand = $this->getRsyncCommand();
-        // echo 'Rsync started', PHP_EOL;
-        // echo $rsyncCommand, PHP_EOL;
+        $this->addAction('rsync', self::STATUS_START);
         shell_exec($rsyncCommand);
+        $this->addAction('rsync', self::STATUS_FINISH);
     }
 
     private function getRsyncCommand()
@@ -98,8 +129,16 @@ class Runner
             . $this->params['port'] . '" '
             . $this->params['user'] . '@'
             . $this->params['host'] . ':'
-            . $this->params['project_path'] . '/ '
-            . $this->params['backup_path'] . '/'
+            . $this->params['project_path'] . DIRECTORY_SEPARATOR . ' '
+            . $this->params['backup_path'] . DIRECTORY_SEPARATOR
             . $this->params['project_name'];
+    }
+
+    private function addAction($action, $status)
+    {
+        $this->actions = [
+            'action' => $action,
+            'status' => $status
+        ];
     }
 }

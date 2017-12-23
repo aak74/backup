@@ -27,9 +27,9 @@ class RunnerTest extends \PHPUnit\Framework\TestCase
     /**
      * Должен возвращаться правильный путь источник
      */
-    public function testCalcSourcePath()
+    public function testGetSourcePath()
     {
-        $method = new \ReflectionMethod('\Backup\Runner', 'calcSourcePath');
+        $method = new \ReflectionMethod('\Backup\Runner', 'getSourcePath');
         $method->setAccessible(true);
         $this->assertEquals(
             '/var/www/html',
@@ -40,58 +40,54 @@ class RunnerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      * Должен возвращаться правильный путь последней копии
+     * Папки из будущего не учитываются,
+     * папки с названием не соответствующим формату даты не учитываются
      */
-    public function calcLastPath()
+    public function getLastPathRegularBackup()
     {
-        // $list = \glob($dir . '*.*');
-        // $dir = vfsStream::url('exampleDir');
-        // print_r($dir);
-        // if (is_dir($dir)) {
-        //     if ($dh = opendir($dir)) {
-        //         while (($file = readdir($dh)) !== false) {
-        //             echo "файл: $file : тип: " . filetype($dir . $file) . "\n";
-        //         }
-        //         closedir($dh);
-        //     }
-        // }
-
-        $reflection = new \ReflectionObject($this->testingClass);
-        $method = $reflection->getMethod('getLastPath');
-        $method->setAccessible(true);
-
         $structure = [
             '2017-12-04' => [
                 'ok.txt' => 'fine'
             ],
             '2017-12-05' => [],
             '2017-12-06' => [],
-            '2099-12-31' => [],
+            '2099-12-31' => [], // folder from future
             '2100-12-31' => 'Something else',
         ];
+        $this->getLastPathAndCompare($structure, '2017-12-06');
+
+        $structure['2017-1211'] = []; // folder with bad format
+        $this->getLastPathAndCompare($structure, '2017-12-06');
+
+        $structure['2017-12-11 00:00:00'] = []; // folder with right format
+        $this->getLastPathAndCompare($structure, '2017-12-11 00:00:00');
+    }
+
+    /**
+     * @test
+     * Должен возвращаться правильный путь последней копии
+     * Для первого бэкапа не должно быть папки источника
+     */
+    public function getLastPathFirstBackup()
+    {
+        echo 'getLastPathFirstBackup', PHP_EOL;
+        $this->getLastPathAndCompare([], false);
+    }
+
+    /**
+     * Вычисляется путь последней копии и сравнивается с ожидаемым
+     */
+    private function getLastPathAndCompare($structure, $pattern)
+    {
+        $reflection = new \ReflectionObject($this->testingClass);
+        $method = $reflection->getMethod('getLastPath');
+        $method->setAccessible(true);
 
         $root = vfsStream::setup('/', null, $structure);
         $folder = $root->url();
 
         $this->assertEquals(
-            '2017-12-06',
-            $method->invoke($this->testingClass, $folder)
-        );
-
-        $root = vfsStream::setup('/', null, $structure);
-        $folder = $root->url();
-        $structure['2017-1211'] = [];
-
-        $this->assertEquals(
-            '2017-12-06',
-            $method->invoke($this->testingClass, $folder)
-        );
-
-        $structure['2017-12-11 00:00:00'] = [];
-        $root = vfsStream::setup('/', null, $structure);
-        $folder = $root->url();
-
-        $this->assertEquals(
-            '2017-12-11 00:00:00',
+            $pattern,
             $method->invoke($this->testingClass, $folder)
         );
     }
