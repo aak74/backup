@@ -1,6 +1,9 @@
 <?php
-
+if (count($argv) === 1) {
+    echo 'Config name is not specified', PHP_EOL;
+    exit(1);
+}
 require_once('./src/bootstrap.php');
-$reader = new \Backup\ConfigReader('dvagruza');
+$reader = new \Backup\ConfigReader($argv[1]);
 $backup = new \Backup\Runner($reader->config);
 $backup->backup();

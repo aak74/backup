@@ -14,6 +14,7 @@ class Runner
     const DIR_PERMISSION = 0755;
     private $lastPath = null;
     private $sourcePath = null;
+    private $destinationPath = null;
 
     public function __construct(array $params)
     {
@@ -85,7 +86,7 @@ class Runner
     {
         // echo Carbon::now();
 
-        $folders = $this->getAllFoldersLtTommorow($folder);
+        $folders = $this->getAllFoldersLtNow($folder);
         // print_r($folders);
         if (count($folders)) {
             $this->lastPath = current($folders);
@@ -95,40 +96,49 @@ class Runner
 
     /**
      * Возвращает все папки в каталоге назначения,
-     * имя которых меньше завтрашнего дня
+     * имя которых меньше текущего времени
      */
-    private function getAllFoldersLtTommorow($folder)
+    private function getAllFoldersLtNow($folder)
     {
         // print_r($folder);
         $files = array_diff(scandir($folder, 1), ['..', '.']);
         // print_r($files);
-        $tomorrow = Carbon::tomorrow();
-        return array_filter($files, function ($file) use ($folder, $tomorrow) {
+        $now = Carbon::now();
+        return array_filter($files, function ($file) use ($folder, $now) {
+            /**
+             * Отметаем файлы и папки с короткими именами, которые заведомо
+             * не подходят в качестве правильного имени папки
+             */
             if (strlen($file) < 8) {
                 return false;
             }
+            // Отметаем файлы
             if (!is_dir($folder . $file)) {
                 return false;
             }
+            // Пытаемся распарсить имя папки как дату
             try {
                 $dt = Carbon::parse($file);
             } catch (\Exception $e) {
                 return false;
             }
-            if ($dt->gte($tomorrow)) {
+            /**
+             * Отметаем даты больше текущего времени
+             */
+            if ($dt->gte($now)) {
                 return false;
             }
             return true;
         });
     }
 
-    private function getPath($filename)
-    {
-        if ($this->params['project_path'][0] == '~') {
-            return '.' . substr($this->params['project_path'], 1) . DIRECTORY_SEPARATOR . $filename;
-        }
-        return $this->params['project_path'] . DIRECTORY_SEPARATOR . $filename;
-    }
+    // private function getPath($filename)
+    // {
+    //     if ($this->params['project_path'][0] == '~') {
+    //         return '.' . substr($this->params['project_path'], 1) . DIRECTORY_SEPARATOR . $filename;
+    //     }
+    //     return $this->params['project_path'] . DIRECTORY_SEPARATOR . $filename;
+    // }
 
     /**
      * Запускает синхронизацию в нужную папку из внешнего источника
@@ -152,8 +162,7 @@ class Runner
             . $this->params['user'] . '@'
             . $this->params['host'] . ':'
             . $this->params['project_path'] . DIRECTORY_SEPARATOR . ' '
-            . '"' . $this->params['backup_folder'] . $this->destinationPath . DIRECTORY_SEPARATOR . '"'
-            . $this->params['project_name'];
+            . '"' . $this->params['backup_folder'] . $this->destinationPath . '"';
     }
 
     private function addAction($action, $status)

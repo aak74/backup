@@ -118,27 +118,18 @@ class RunnerTest extends \PHPUnit\Framework\TestCase
 
     /**
      * Должен возвращаться правильная команда для rsync
+     * @test
      */
-    public function _testGetRsyncCommand()
+    public function getRsyncCommand()
     {
         $method = new \ReflectionMethod('\Backup\Runner', 'getRsyncCommand');
         $method->setAccessible(true);
+        $property = new \ReflectionProperty('\Backup\Runner', 'destinationPath');
+        $property->setAccessible(true);
+        $property->setValue($this->testingClass, '2017-12-07');
         $this->assertEquals(
-            'rsync -aLz --delete --exclude-from exclude.txt -e "ssh -p 22" user@example.com:/var/www/html/ /mnt/b/backup/some-project',
+            'rsync -aLz --delete-after --exclude-from exclude.txt -e "ssh -p 22" user@example.com:/var/www/html/ "/mnt/b/backup/some-project/2017-12-07"',
             $method->invoke($this->testingClass)
-        );
-    }
-    /**
-     * Должен возвращаться правильная команда для backup DB
-     */
-    public function _testGetDumpCommand()
-    {
-        $method = new \ReflectionMethod('\Backup\Runner', 'getDumpCommand');
-        $method->setAccessible(true);
-        $params = ['database' => 'dbname', 'login' => 'login', 'password' => 'password'];
-        $this->assertEquals(
-            'mysqldump -u login -p"password" dbname > /var/www/html/db.sql',
-            $method->invoke($this->testingClass, $params)
         );
     }
 }
