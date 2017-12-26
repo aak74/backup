@@ -26,8 +26,9 @@ class RunnerTest extends \PHPUnit\Framework\TestCase
 
     /**
      * Должен возвращаться правильный путь источник
+     *
      */
-    public function testGetSourcePath()
+    public function getSourcePath()
     {
         $method = new \ReflectionMethod('\Backup\Runner', 'getSourcePath');
         $method->setAccessible(true);
@@ -43,7 +44,7 @@ class RunnerTest extends \PHPUnit\Framework\TestCase
      * Папки из будущего не учитываются,
      * папки с названием не соответствующим формату даты не учитываются
      */
-    public function getLastPathRegularBackup()
+    public function calcLastPathRegularBackup()
     {
         $structure = [
             '2017-12-04' => [
@@ -54,13 +55,16 @@ class RunnerTest extends \PHPUnit\Framework\TestCase
             '2099-12-31' => [], // folder from future
             '2100-12-31' => 'Something else',
         ];
-        $this->getLastPathAndCompare($structure, '2017-12-06');
+        $this->calcLastPathAndCompare($structure, '2017-12-06');
 
         $structure['2017-1211'] = []; // folder with bad format
-        $this->getLastPathAndCompare($structure, '2017-12-06');
+        $this->calcLastPathAndCompare($structure, '2017-12-06');
+
+        $structure['f'] = []; // folder with bad format
+        $this->calcLastPathAndCompare($structure, '2017-12-06');
 
         $structure['2017-12-11 00:00:00'] = []; // folder with right format
-        $this->getLastPathAndCompare($structure, '2017-12-11 00:00:00');
+        $this->calcLastPathAndCompare($structure, '2017-12-11 00:00:00');
     }
 
     /**
@@ -68,19 +72,19 @@ class RunnerTest extends \PHPUnit\Framework\TestCase
      * Должен возвращаться правильный путь последней копии
      * Для первого бэкапа не должно быть папки источника
      */
-    public function getLastPathFirstBackup()
+    public function calcLastPathFirstBackup()
     {
-        echo 'getLastPathFirstBackup', PHP_EOL;
-        $this->getLastPathAndCompare([], false);
+        // echo 'calcLastPathFirstBackup', PHP_EOL;
+        $this->calcLastPathAndCompare([], false);
     }
 
     /**
      * Вычисляется путь последней копии и сравнивается с ожидаемым
      */
-    private function getLastPathAndCompare($structure, $pattern)
+    private function calcLastPathAndCompare($structure, $pattern)
     {
         $reflection = new \ReflectionObject($this->testingClass);
-        $method = $reflection->getMethod('getLastPath');
+        $method = $reflection->getMethod('calcLastPath');
         $method->setAccessible(true);
 
         $root = vfsStream::setup('/', null, $structure);
@@ -90,6 +94,26 @@ class RunnerTest extends \PHPUnit\Framework\TestCase
             $pattern,
             $method->invoke($this->testingClass, $folder)
         );
+    }
+
+    /**
+     * @test
+     */
+    public function createFolders()
+    {
+        $reflection = new \ReflectionObject($this->testingClass);
+        $method = $reflection->getMethod('createFolders');
+        $method->setAccessible(true);
+
+        $structure = [
+            '/mnt/b/' => []
+        ];
+        $root = vfsStream::setup('/', null, $structure);
+        $folder = $root->url() . 'mnt/b/backup/some-project';
+
+        $method->invoke($this->testingClass, $folder);
+        $this->assertTrue(is_dir($folder));
+
     }
 
     /**

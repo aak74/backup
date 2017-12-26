@@ -11,24 +11,38 @@ class Runner
 {
     const STATUS_START = 0;
     const STATUS_FINISH = 1;
+    const DIR_PERMISSION = 0755;
+    private $lastPath = null;
+    private $sourcePath = null;
 
     public function __construct(array $params)
     {
         $this->params = $params;
-        $this->params['backup_folder'] = $this->params['backup_path'] . DIRECTORY_SEPARATOR . $this->params['project_name'];
+        $this->params['backup_folder'] = $this->params['backup_path']
+            . DIRECTORY_SEPARATOR . $this->params['project_name'] . DIRECTORY_SEPARATOR;
     }
 
     public function backup()
     {
-        print_r($this->params);
-        $this->getSourcePath();
+        // print_r($this->params);
+        $this->createFolders($this->params['backup_folder']);
+        $this->calcLastPath($this->params['backup_folder']);
+        var_dump($this->lastPath);
         $this->calcDestinationPath();
-        if ($this->sourcePath) {
+        if ($this->lastPath) {
             $this->copyWithHardLinks();
         }
-        return;
+        // return;
+        $this->getSourcePath();
         $this->rsync();
-        $this->removeWastedCopy();
+        // $this->removeWastedCopy();
+    }
+
+    private function createFolders($folder)
+    {
+        if (!is_dir($folder)) {
+            mkdir($folder, self::DIR_PERMISSION, true);
+        }
     }
 
     /**
@@ -36,7 +50,7 @@ class Runner
      */
     private function calcDestinationPath()
     {
-        return Carbon::now();
+        $this->destinationPath = Carbon::now();
     }
 
     /**
@@ -45,6 +59,7 @@ class Runner
      */
     private function getSourcePath()
     {
+        // $this->sourcePath = $this->calcLastPath($this->params['backup_folder']);
         $this->sourcePath = $this->params['project_path'];
         return $this->sourcePath;
     }
@@ -54,25 +69,28 @@ class Runner
      */
     private function copyWithHardLinks()
     {
-        shell_exec('copyWithHardLinks.sh '
-            . $this->getLastPath($this->params['backup_folder'])
-            . ' ' . $this->destinationPath);
+        $output = shell_exec(__DIR__ . '/sh/copyWithHardLinks.sh '
+            . '"' . $this->params['backup_folder'] . $this->lastPath . '"'
+            // . $this->params['backup_folder'] . $this->lastPath . '"'
+            . ' "' . $this->params['backup_folder'] . $this->destinationPath . '"');
+            // . ' "' . $this->params['backup_folder'] . $this->destinationPath) . '"';
+        echo $output, PHP_EOL;
     }
 
     /**
      * Возвращает последний путь с последней копией6
      * из которого будет скопирована предыдущая копия с хардлинками
      */
-    private function getLastPath($folder)
+    private function calcLastPath($folder)
     {
         // echo Carbon::now();
 
         $folders = $this->getAllFoldersLtTommorow($folder);
         // print_r($folders);
         if (count($folders)) {
-            return current($folders);
+            $this->lastPath = current($folders);
         }
-        return false;
+        return $this->lastPath;
     }
 
     /**
@@ -81,9 +99,14 @@ class Runner
      */
     private function getAllFoldersLtTommorow($folder)
     {
+        // print_r($folder);
         $files = array_diff(scandir($folder, 1), ['..', '.']);
+        // print_r($files);
         $tomorrow = Carbon::tomorrow();
         return array_filter($files, function ($file) use ($folder, $tomorrow) {
+            if (strlen($file) < 8) {
+                return false;
+            }
             if (!is_dir($folder . $file)) {
                 return false;
             }
@@ -92,7 +115,6 @@ class Runner
             } catch (\Exception $e) {
                 return false;
             }
-
             if ($dt->gte($tomorrow)) {
                 return false;
             }
@@ -130,7 +152,7 @@ class Runner
             . $this->params['user'] . '@'
             . $this->params['host'] . ':'
             . $this->params['project_path'] . DIRECTORY_SEPARATOR . ' '
-            . $this->params['backup_path'] . DIRECTORY_SEPARATOR
+            . '"' . $this->params['backup_folder'] . $this->destinationPath . DIRECTORY_SEPARATOR . '"'
             . $this->params['project_name'];
     }
 
