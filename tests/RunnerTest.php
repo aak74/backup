@@ -4,6 +4,9 @@ namespace AppTests;
 
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
+use \Backup\ConfigReader\ConfigReaderInterface;
+use \Backup\ConfigReader\ConfigReaderArray;
+
 
 class RunnerTest extends \PHPUnit\Framework\TestCase
 {
@@ -21,7 +24,9 @@ class RunnerTest extends \PHPUnit\Framework\TestCase
             'public_key' => '~/.ssh/id_rsa.pub',
             'private_key' => '~/.ssh/id_rsa'
         ];
-        $this->testingClass = new \Backup\Runner($this->defaultParams);
+        $this->testingClass = new \Backup\Runner(
+            new \Backup\ConfigReader\ConfigReaderArray($this->defaultParams)
+        );
     }
 
     /**
@@ -140,15 +145,14 @@ class RunnerTest extends \PHPUnit\Framework\TestCase
      */
     public function getRsyncCommandLocalhost()
     {
-        $this->testingClass = new \Backup\Runner($this->defaultParams);
-        $method = new \ReflectionMethod('\Backup\Runner', 'setParams');
-        $method->setAccessible(true);
-        $method->invoke($this->testingClass, [
-            'backup_path' => '/mnt/b/backup',
-            'host' => 'localhost',
-            'project_path' => '/var/www/html',
-            'project_name' => 'some-project',
-        ]);
+        $this->testingClass = new \Backup\Runner(
+            new \Backup\ConfigReader\ConfigReaderArray([
+                'backup_path' => '/mnt/b/backup',
+                'host' => 'localhost',
+                'project_path' => '/var/www/html',
+                'project_name' => 'some-project',
+            ])
+        );
         
         $method = new \ReflectionMethod('\Backup\Runner', 'getRsyncCommand');
         $method->setAccessible(true);

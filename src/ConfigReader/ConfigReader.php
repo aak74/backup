@@ -1,8 +1,8 @@
 <?php
 
-namespace Backup;
+namespace Backup\ConfigReader;
 
-class ConfigReader
+class ConfigReader extends ConfigReaderAbstract
 {
     public function __construct($configName = 'default')
     {

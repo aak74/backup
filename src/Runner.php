@@ -3,6 +3,7 @@
 namespace Backup;
 
 use Carbon\Carbon;
+use Backup\ConfigReader\ConfigReaderInterface;
 
 /**
  * Запускатель backup
@@ -16,21 +17,17 @@ class Runner
     private $sourcePath = null;
     private $destinationPath = null;
 
-    public function __construct(array $params)
+    public function __construct(ConfigReaderInterface $reader)
     {
-        $this->setParams($params);
-    }
-
-    private function setParams(array $params)
-    {
-        $this->params = $params;
+        $this->params = $reader->getConfig();
         $this->params['backup_folder'] = $this->params['backup_path']
-            . DIRECTORY_SEPARATOR . $this->params['project_name'] . DIRECTORY_SEPARATOR;
+        . DIRECTORY_SEPARATOR . $this->params['project_name'] . DIRECTORY_SEPARATOR;
     }
 
     public function backup()
     {
         // print_r($this->params);
+        // die;
         $this->createFolders($this->params['backup_folder']);
         $this->calcLastPath($this->params['backup_folder']);
         var_dump($this->lastPath);
