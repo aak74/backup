@@ -18,6 +18,11 @@ class Runner
 
     public function __construct(array $params)
     {
+        $this->setParams($params);
+    }
+
+    private function setParams(array $params)
+    {
         $this->params = $params;
         $this->params['backup_folder'] = $this->params['backup_path']
             . DIRECTORY_SEPARATOR . $this->params['project_name'] . DIRECTORY_SEPARATOR;
@@ -70,6 +75,7 @@ class Runner
      */
     private function copyWithHardLinks()
     {
+        // \var_dump($this->params);
         $output = shell_exec(__DIR__ . '/sh/copyWithHardLinks.sh '
             . '"' . $this->params['backup_folder'] . $this->lastPath . '"'
             // . $this->params['backup_folder'] . $this->lastPath . '"'
@@ -79,7 +85,7 @@ class Runner
     }
 
     /**
-     * Возвращает последний путь с последней копией6
+     * Возвращает последний путь с последней копией,
      * из которого будет скопирована предыдущая копия с хардлинками
      */
     private function calcLastPath($folder)
@@ -132,14 +138,6 @@ class Runner
         });
     }
 
-    // private function getPath($filename)
-    // {
-    //     if ($this->params['project_path'][0] == '~') {
-    //         return '.' . substr($this->params['project_path'], 1) . DIRECTORY_SEPARATOR . $filename;
-    //     }
-    //     return $this->params['project_path'] . DIRECTORY_SEPARATOR . $filename;
-    // }
-
     /**
      * Запускает синхронизацию в нужную папку из внешнего источника
      */
@@ -151,8 +149,20 @@ class Runner
         $this->addAction('rsync', self::STATUS_FINISH);
     }
 
+    /**
+     * Возвращает текст команды для rsync
+     */
     private function getRsyncCommand()
     {
+        /**
+         * для localhost не нужно подключение по ssh
+         */
+        if ($this->params['host'] === 'localhost') {
+            return 'rsync -aLz --delete-after --exclude-from exclude.txt '
+                . $this->params['project_path'] . DIRECTORY_SEPARATOR . ' '
+                . '"' . $this->params['backup_folder'] . $this->destinationPath . '"';
+        }
+        
         $prefix = (empty($this->params['password']))
             ? ''
             : 'sshpass -p ' . $this->params['password'] . ' ';
@@ -165,6 +175,9 @@ class Runner
             . '"' . $this->params['backup_folder'] . $this->destinationPath . '"';
     }
 
+    /**
+     * Добавляет action в целях тестирования
+     */
     private function addAction($action, $status)
     {
         $this->actions = [
