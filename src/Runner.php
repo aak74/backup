@@ -26,21 +26,42 @@ class Runner
 
     public function backup()
     {
+        $this->calcDestinationPath();
         // print_r($this->params);
         // die;
+        // $this->backupFiles();
+        $this->backupDB();
+    }
+
+    private function backupDB()
+    {
+        if (!empty($this->params['database']) 
+            && !empty($this->params['database']['provider'])
+        ) {
+            $this->createFolders($this->params['backup_folder'] . '/db/');
+            $this->params['destinationName'] = $this->params['backup_folder'] . '/db' . $this->destinationPath . '.sql';
+            $dbProviderClass = '\Backup\DbProvider\\' . ucfirst($this->params['database']['provider']);
+            // print_r([$dbProviderClass, $this->params]);
+            $fileProvider = '\Backup\FileProvider\\' 
+                . ($this->isLocal() ? 'Local' : 'Remote');
+            $dbProvider = new $dbProviderClass(new $fileProvider($this->params), $this->params);
+            $dbProvider->getDump();
+        }
+    }
+    
+    private function backupFiles()
+    {
         $this->createFolders($this->params['backup_folder']);
         $this->calcLastPath($this->params['backup_folder']);
-        var_dump($this->lastPath);
-        $this->calcDestinationPath();
+        // var_dump($this->lastPath);
         if ($this->lastPath) {
             $this->copyWithHardLinks();
         }
         // return;
         $this->getSourcePath();
         $this->rsync();
-        // $this->removeWastedCopy();
     }
-
+    
     private function createFolders($folder)
     {
         if (!is_dir($folder)) {
@@ -154,12 +175,13 @@ class Runner
         /**
          * для localhost не нужно подключение по ssh
          */
-        if ($this->params['host'] === 'localhost') {
+        if ($this->isLocal()) {
             return 'rsync -aLz --delete-after --exclude-from exclude.txt '
                 . $this->params['project_path'] . DIRECTORY_SEPARATOR . ' '
                 . '"' . $this->params['backup_folder'] . $this->destinationPath . '"';
         }
         
+        // Для хостов, которые не поддерживают аутентификацию по ключу воспользуемся паролем
         $prefix = (empty($this->params['password']))
             ? ''
             : 'sshpass -p ' . $this->params['password'] . ' ';
@@ -182,4 +204,10 @@ class Runner
             'status' => $status
         ];
     }
+
+    private function isLocal()
+    {
+        return ($this->params['host'] === 'localhost');
+    }
+
 }

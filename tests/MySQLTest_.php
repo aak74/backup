@@ -24,7 +24,7 @@ class MySQLTest extends \PHPUnit\Framework\TestCase
 
     /**
      * Должен возвращаться правильная команда для backup DB
-     * @test
+     * @test1
      */
     public function getDumpCommand()
     {
