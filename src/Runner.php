@@ -3,6 +3,7 @@
 namespace Backup;
 
 use Carbon\Carbon;
+use Backup\ConfigReader\ConfigReaderInterface;
 
 /**
  * Запускатель backup
@@ -16,29 +17,51 @@ class Runner
     private $sourcePath = null;
     private $destinationPath = null;
 
-    public function __construct(array $params)
+    public function __construct(ConfigReaderInterface $reader)
     {
-        $this->params = $params;
+        $this->params = $reader->getConfig();
         $this->params['backup_folder'] = $this->params['backup_path']
-            . DIRECTORY_SEPARATOR . $this->params['project_name'] . DIRECTORY_SEPARATOR;
+        . DIRECTORY_SEPARATOR . $this->params['project_name'] . DIRECTORY_SEPARATOR;
     }
 
     public function backup()
     {
+        $this->calcDestinationPath();
         // print_r($this->params);
+        // die;
+        $this->backupFiles();
+        $this->backupDB();
+    }
+
+    private function backupDB()
+    {
+        if (!empty($this->params['database']) 
+            && !empty($this->params['database']['provider'])
+        ) {
+            $this->createFolders($this->params['backup_folder'] . '/db/');
+            $this->params['destinationName'] = $this->params['backup_folder'] . '/db/' . $this->destinationPath . '.sql';
+            $dbProviderClass = '\Backup\DbProvider\\' . ucfirst($this->params['database']['provider']);
+            // print_r([$dbProviderClass, $this->params]);
+            $fileProvider = '\Backup\FileProvider\\' 
+                . ($this->isLocal() ? 'Local' : 'Remote');
+            $dbProvider = new $dbProviderClass(new $fileProvider($this->params), $this->params);
+            $dbProvider->getDump();
+        }
+    }
+    
+    private function backupFiles()
+    {
         $this->createFolders($this->params['backup_folder']);
         $this->calcLastPath($this->params['backup_folder']);
-        var_dump($this->lastPath);
-        $this->calcDestinationPath();
+        // var_dump($this->lastPath);
         if ($this->lastPath) {
             $this->copyWithHardLinks();
         }
         // return;
         $this->getSourcePath();
         $this->rsync();
-        // $this->removeWastedCopy();
     }
-
+    
     private function createFolders($folder)
     {
         if (!is_dir($folder)) {
@@ -70,6 +93,7 @@ class Runner
      */
     private function copyWithHardLinks()
     {
+        // \var_dump($this->params);
         $output = shell_exec(__DIR__ . '/sh/copyWithHardLinks.sh '
             . '"' . $this->params['backup_folder'] . $this->lastPath . '"'
             // . $this->params['backup_folder'] . $this->lastPath . '"'
@@ -79,7 +103,7 @@ class Runner
     }
 
     /**
-     * Возвращает последний путь с последней копией6
+     * Возвращает последний путь с последней копией,
      * из которого будет скопирована предыдущая копия с хардлинками
      */
     private function calcLastPath($folder)
@@ -132,14 +156,6 @@ class Runner
         });
     }
 
-    // private function getPath($filename)
-    // {
-    //     if ($this->params['project_path'][0] == '~') {
-    //         return '.' . substr($this->params['project_path'], 1) . DIRECTORY_SEPARATOR . $filename;
-    //     }
-    //     return $this->params['project_path'] . DIRECTORY_SEPARATOR . $filename;
-    // }
-
     /**
      * Запускает синхронизацию в нужную папку из внешнего источника
      */
@@ -151,8 +167,21 @@ class Runner
         $this->addAction('rsync', self::STATUS_FINISH);
     }
 
+    /**
+     * Возвращает текст команды для rsync
+     */
     private function getRsyncCommand()
     {
+        /**
+         * для localhost не нужно подключение по ssh
+         */
+        if ($this->isLocal()) {
+            return 'rsync -aLz --delete-after --exclude-from exclude.txt '
+                . $this->params['project_path'] . DIRECTORY_SEPARATOR . ' '
+                . '"' . $this->params['backup_folder'] . $this->destinationPath . '"';
+        }
+        
+        // Для хостов, которые не поддерживают аутентификацию по ключу воспользуемся паролем
         $prefix = (empty($this->params['password']))
             ? ''
             : 'sshpass -p ' . $this->params['password'] . ' ';
@@ -165,6 +194,9 @@ class Runner
             . '"' . $this->params['backup_folder'] . $this->destinationPath . '"';
     }
 
+    /**
+     * Добавляет action в целях тестирования
+     */
     private function addAction($action, $status)
     {
         $this->actions = [
@@ -172,4 +204,10 @@ class Runner
             'status' => $status
         ];
     }
+
+    private function isLocal()
+    {
+        return ($this->params['host'] === 'localhost');
+    }
+
 }

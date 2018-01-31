@@ -4,6 +4,6 @@ if (count($argv) === 1) {
     exit(1);
 }
 require_once('./src/bootstrap.php');
-$reader = new \Backup\ConfigReader($argv[1]);
-$backup = new \Backup\Runner($reader->config);
+$reader = new \Backup\ConfigReader\ConfigReader($argv[1]);
+$backup = new \Backup\Runner($reader);
 $backup->backup();

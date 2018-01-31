@@ -4,6 +4,9 @@ namespace AppTests;
 
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
+use \Backup\ConfigReader\ConfigReaderInterface;
+use \Backup\ConfigReader\ConfigReaderArray;
+
 
 class RunnerTest extends \PHPUnit\Framework\TestCase
 {
@@ -21,7 +24,9 @@ class RunnerTest extends \PHPUnit\Framework\TestCase
             'public_key' => '~/.ssh/id_rsa.pub',
             'private_key' => '~/.ssh/id_rsa'
         ];
-        $this->testingClass = new \Backup\Runner($this->defaultParams);
+        $this->testingClass = new \Backup\Runner(
+            new \Backup\ConfigReader\ConfigReaderArray($this->defaultParams)
+        );
     }
 
     /**
@@ -129,6 +134,34 @@ class RunnerTest extends \PHPUnit\Framework\TestCase
         $property->setValue($this->testingClass, '2017-12-07');
         $this->assertEquals(
             'rsync -aLz --delete-after --exclude-from exclude.txt -e "ssh -p 22" user@example.com:/var/www/html/ "/mnt/b/backup/some-project/2017-12-07"',
+            $method->invoke($this->testingClass)
+        );
+    }
+
+    /**
+     * Должен возвращаться правильная команда для rsync
+     * для localhost
+     * @test
+     */
+    public function getRsyncCommandLocalhost()
+    {
+        $this->testingClass = new \Backup\Runner(
+            new \Backup\ConfigReader\ConfigReaderArray([
+                'backup_path' => '/mnt/b/backup',
+                'host' => 'localhost',
+                'project_path' => '/var/www/html',
+                'project_name' => 'some-project',
+            ])
+        );
+        
+        $method = new \ReflectionMethod('\Backup\Runner', 'getRsyncCommand');
+        $method->setAccessible(true);
+        $property = new \ReflectionProperty('\Backup\Runner', 'destinationPath');
+        $property->setAccessible(true);
+        $property->setValue($this->testingClass, '2017-12-07');
+        
+        $this->assertEquals(
+            'rsync -aLz --delete-after --exclude-from exclude.txt /var/www/html/ "/mnt/b/backup/some-project/2017-12-07"',
             $method->invoke($this->testingClass)
         );
     }
