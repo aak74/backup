@@ -7,6 +7,5 @@ return array_merge(
         'port' => '2222',
         'project_path' => '/var/www/html',
         'project_name' => 'example',
-        'dump_name' => 'db.sql',
     ]
 );

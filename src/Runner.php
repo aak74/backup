@@ -29,7 +29,7 @@ class Runner
         $this->calcDestinationPath();
         // print_r($this->params);
         // die;
-        // $this->backupFiles();
+        $this->backupFiles();
         $this->backupDB();
     }
 
@@ -39,7 +39,7 @@ class Runner
             && !empty($this->params['database']['provider'])
         ) {
             $this->createFolders($this->params['backup_folder'] . '/db/');
-            $this->params['destinationName'] = $this->params['backup_folder'] . '/db' . $this->destinationPath . '.sql';
+            $this->params['destinationName'] = $this->params['backup_folder'] . '/db/' . $this->destinationPath . '.sql';
             $dbProviderClass = '\Backup\DbProvider\\' . ucfirst($this->params['database']['provider']);
             // print_r([$dbProviderClass, $this->params]);
             $fileProvider = '\Backup\FileProvider\\' 

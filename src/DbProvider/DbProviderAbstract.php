@@ -22,7 +22,7 @@ class DbProviderAbstract implements DbProviderInterface
         // return;
         $this->backup();
         $this->fileProvider->moveDumpToDestination($this->getDumpName(), $this->getDestinationName());
-        $this->fileProvider->removeDump();
+        // $this->fileProvider->removeDump();
     }
     
     protected function getDbCredentials()
@@ -51,7 +51,8 @@ class DbProviderAbstract implements DbProviderInterface
     
     protected function getDumpName()
     {
-        return '"/tmp/dump-' . $this->params['project_name'] . '.sql"';
+        return '/tmp/dump-' . $this->params['project_name'] . '.sql';
+        return '"dump-' . $this->params['project_name'] . '.sql"';
     }
     
     protected function getDestinationName()

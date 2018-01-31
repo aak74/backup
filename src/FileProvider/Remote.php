@@ -5,16 +5,16 @@ namespace Backup\FileProvider;
 class Remote extends FileProviderAbstract
 {
     private $connection = null;
+    private $sftp = null;
     
     public function dumpDB(String $dumpCommand, String $dumpName)
     {
-        print_r(['dumpDB', $dumpCommand]);
         $this->connect();
-        $stream = ssh2_exec(
+        $stream = \ssh2_exec(
             $this->connection,
             $dumpCommand
         );
-        $errorStream = ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);
+        $errorStream = \ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);
         stream_set_blocking($errorStream, true);
         stream_set_blocking($stream, true);
         if ($output = stream_get_contents($stream)) {
@@ -34,21 +34,7 @@ class Remote extends FileProviderAbstract
 
     private function getFileSize(String $dumpName)
     {
-        // die;
-        $sftp = \ssh2_sftp($this->connection);
-        $dumpName = '~/.bashrc';
-        // $stat = ssh2_sftp_stat($sftp, $dumpName);
-        $sftp = intval($sftp);
-        $stat = stat("ssh2.sftp://$sftp/$dumpName");
-        // $stat = ssh2_sftp_stat($sftp, $dumpName);
-        print_r([
-            'getFileSize', 
-            $dumpName, 
-            // $this->params, 
-            // $stat,
-            $sftp,
-            $this->connection
-        ]);
+        $stat = \ssh2_sftp_stat($this->getSFTP(), $dumpName);
         return ($stat && $stat['size'] > 0)
             ? $stat['size']
             : false;
@@ -60,12 +46,11 @@ class Remote extends FileProviderAbstract
     public function getConfigFile(String $path)
     {
         $this->connect();
-        $sftp = \ssh2_sftp($this->connection);
+        $sftp = $this->getSFTP();
         $stream = fopen("ssh2.sftp://$sftp$path", 'r');
         $config = stream_get_contents($stream);
         fclose($stream);
         return $config;
-        // throw new \Exception("File $path doesn't exists", 404);
     }
     
     private function connect()
@@ -105,5 +90,4 @@ class Remote extends FileProviderAbstract
             ? $this->sftp
             : $this->sftp = \ssh2_sftp($this->connection);
     }
-    
 }

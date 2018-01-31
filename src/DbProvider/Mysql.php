@@ -15,7 +15,6 @@ class Mysql extends DbProviderAbstract
             . $this->dbCredentials['login']
             . ' -p"' . $this->dbCredentials['password'] . '" ' . $this->dbCredentials['database']
             . ' > '
-            . $this->dbCredentials['dump_path'] 
-            . $this->getDumpName();
+            . '"' . $this->getDumpName() . '"';
     }
 }
