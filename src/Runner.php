@@ -29,8 +29,8 @@ class Runner
         $this->calcDestinationPath();
         // print_r($this->params);
         // die;
-        $this->backupFiles();
         $this->backupDB();
+        $this->backupFiles();
     }
 
     private function backupDB()
