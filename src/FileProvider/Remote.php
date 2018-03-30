@@ -17,7 +17,7 @@ class Remote extends FileProviderAbstract
         $result = !$ssh->exec($dumpCommand);
 
         if ($result && ($filesize = $this->getFileSize($dumpName))) {
-            echo "Size of MySQL dump = " . $filesize, PHP_EOL;
+            $this->setMessage("Size of database dump = " . $filesize);
         }
         return $result && $filesize;
     }    

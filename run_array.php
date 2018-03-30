@@ -10,4 +10,9 @@ $params['backup_path'] = '/mnt/b/backup';
 
 $reader = new \Backup\ConfigReader\ConfigReaderArray($params);
 $backup = new \Backup\Runner($reader);
-$backup->backup();
+$backup->backup(function ($status, $message = null) {
+    echo $status, PHP_EOL;
+    if ($message) {
+        echo $message, PHP_EOL;
+    }
+});

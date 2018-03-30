@@ -10,6 +10,8 @@ use Backup\ConfigReader\ConfigReaderInterface;
  */
 class Runner
 {
+    use CallbackTrait;
+
     const STATUS_START = 0;
     const STATUS_FINISH = 1;
     const DIR_PERMISSION = 0755;
@@ -19,41 +21,59 @@ class Runner
 
     public function __construct(ConfigReaderInterface $reader)
     {
-        // echo '3', PHP_EOL;
         $this->params = $reader->getConfig();
         $this->params['backup_folder'] = $this->params['backup_path']
             . DIRECTORY_SEPARATOR . $this->params['name'] . DIRECTORY_SEPARATOR;
-        // print_r($this->params);
-        // echo '4', PHP_EOL;
     }
 
-    public function backup()
+    public function backup($callback)
     {
-        // print_r($this->params);
-        // return;
+        $this->callback = $callback;
+        $this->addAction(Status::BACKUP_START);
         $this->calcDestinationPath();
         $this->backupDB();
-        // $this->backupFiles();
+        $this->backupFiles();
+        $this->addAction(Status::BACKUP_FINISH);
     }
 
     private function backupDB()
     {
+        $this->addAction(Status::BACKUP_DB_START);
         if (!empty($this->params['database']) 
-            && !empty($this->params['database']['provider'])
+        && !empty($this->params['database']['provider'])
         ) {
             $this->createFolders($this->params['backup_folder'] . '/db/');
-            $this->params['destinationName'] = $this->params['backup_folder'] . '/db/' . $this->destinationPath . '.sql';
-            $dbProviderClass = '\Backup\DbProvider\\' . ucfirst($this->params['database']['provider']);
-            // print_r([$dbProviderClass, $this->params]);
-            $fileProvider = '\Backup\FileProvider\\' 
-                . ($this->isLocal() ? 'Local' : 'Remote');
-            $dbProvider = new $dbProviderClass(new $fileProvider($this->params), $this->params);
-            $dbProvider->getDump();
+            $this->getDump();
         }
+        $this->addAction(Status::BACKUP_DB_FINISH);
+    }
+    
+    private function getDump()
+    {
+        $this->getDbProvider()->getDump();
+    }
+    
+    private function getDbProvider()
+    {
+        $dbProviderClass = $this->getDbProviderClass();
+        return new $dbProviderClass($this->getFileProvider(), $this->params, $this->callback);
+    }
+    
+    private function getDbProviderClass()
+    {
+        return '\Backup\DbProvider\\' . ucfirst($this->params['database']['provider']);
+    }
+    
+    private function getFileProvider()
+    {
+        $this->params['destinationName'] = $this->params['backup_folder'] . '/db/' . $this->destinationPath . '.sql';
+        $fileProvider = '\Backup\FileProvider\\' . ($this->isLocal() ? 'Local' : 'Remote');
+        return new $fileProvider($this->params, $this->callback);
     }
     
     private function backupFiles()
     {
+        $this->addAction(Status::BACKUP_FILES_START);
         $this->createFolders($this->params['backup_folder']);
         $this->calcLastPath($this->params['backup_folder']);
         // var_dump($this->lastPath);
@@ -63,6 +83,7 @@ class Runner
         // return;
         $this->getSourcePath();
         $this->rsync();
+        $this->addAction(Status::BACKUP_FILES_FINISH);
     }
     
     private function createFolders($folder)
@@ -96,13 +117,11 @@ class Runner
      */
     private function copyWithHardLinks()
     {
-        // \var_dump($this->params);
+        $this->addAction(Status::BACKUP_FILES_HLCOPY_START);
         $output = shell_exec(__DIR__ . '/sh/copyWithHardLinks.sh '
             . '"' . $this->params['backup_folder'] . $this->lastPath . '"'
-            // . $this->params['backup_folder'] . $this->lastPath . '"'
             . ' "' . $this->params['backup_folder'] . $this->destinationPath . '"');
-            // . ' "' . $this->params['backup_folder'] . $this->destinationPath) . '"';
-        echo $output, PHP_EOL;
+        $this->addAction(Status::BACKUP_FILES_HLCOPY_FINISH, $output);
     }
 
     /**
@@ -164,10 +183,10 @@ class Runner
      */
     private function rsync()
     {
+        $this->addAction(Status::BACKUP_FILES_RSYNC_START);
         $rsyncCommand = $this->getRsyncCommand();
-        $this->addAction('rsync', self::STATUS_START);
-        shell_exec($rsyncCommand);
-        $this->addAction('rsync', self::STATUS_FINISH);
+        $output = shell_exec($rsyncCommand);
+        $this->addAction(Status::BACKUP_FILES_RSYNC_FINISH, $output);
     }
 
     /**
@@ -200,12 +219,10 @@ class Runner
     /**
      * Добавляет action в целях тестирования
      */
-    private function addAction($action, $status)
+    private function addAction($status, $message = null)
     {
-        $this->actions = [
-            'action' => $action,
-            'status' => $status
-        ];
+        $this->callbackExec($status, $message);
+        $this->actions[] = $status;
     }
 
     private function isLocal()

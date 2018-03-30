@@ -3,14 +3,18 @@
 namespace Backup\DbProvider;
 
 use Backup\FileProvider\FileProviderInterface;
+use Backup\Status;
 
 class DbProviderAbstract implements DbProviderInterface
 {
+    use \Backup\CallbackTrait;
+
     protected $params = null;
     protected $dbCredentials = null;
     
-    public function __construct(FileProviderInterface $fileProvider, array $params)
+    public function __construct(FileProviderInterface $fileProvider, array $params, $callback = null)
     {
+        $this->callback = $callback;
         $this->fileProvider = $fileProvider;
         $this->params = $params;
     }
@@ -18,11 +22,10 @@ class DbProviderAbstract implements DbProviderInterface
     public function getDump()
     {
         $this->getDbCredentials();
-        // print_r($this->dbCredentials);
-        // return;
+        $this->callbackExec(Status::BACKUP_DB_DUMP_START);
         $this->backup();
+        $this->callbackExec(Status::BACKUP_DB_DUMP_FINISH);
         $this->fileProvider->moveDumpToDestination($this->getDumpName(), $this->getDestinationName());
-        // $this->fileProvider->removeDump();
     }
     
     protected function getDbCredentials()

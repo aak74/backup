@@ -2,12 +2,18 @@
 
 namespace Backup\FileProvider;
 
+use Backup\Status;
+
 abstract class FileProviderAbstract implements FileProviderInterface
 {
+    use \Backup\CallbackTrait;
+
     protected $params = null;
+    protected $message = null;
     
-    public function __construct(array $params)
+    public function __construct(array $params, $callback = null)
     {
+        $this->callback = $callback;
         $this->params = $params;
     }
 
@@ -15,19 +21,14 @@ abstract class FileProviderAbstract implements FileProviderInterface
     
     public function moveDumpToDestination(String $source, String $destination)
     {
+        $this->callbackExec(Status::BACKUP_DB_DUMP_COPY_START);
         $this->putDumpToDestination($source, $destination);
         $this->removeDump($source);
+        $this->callbackExec(Status::BACKUP_DB_DUMP_COPY_FINISH, $this->message);
     }
-    
-    // abstract public function getFile(String $path);
 
-    // public function getDump()
-    // public function getDump()
-    // {
-    //     $this->fileProvider = $fileProvider;
-    //     $this->backup();
-    //     $this->fileProvider->getDump();
-    //     $this->fileProvider->removeDump();
-    // }
-    
+    protected function setMessage(String $message)
+    {
+        $this->message = $message;
+    }
 }
