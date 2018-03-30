@@ -15,6 +15,7 @@ class Bitrix extends Mysql
 
     protected function parseConfigFile(String $file)
     {
+        // var_dump($file);
         $config = include("data://," . $file);
         $connections = $config['connections'];
         if (empty($connections)) {

@@ -42,7 +42,7 @@ class Runner
         if (!empty($this->params['database']) 
         && !empty($this->params['database']['provider'])
         ) {
-            $this->createFolders($this->params['backup_folder'] . '/db/');
+            $this->createFolders($this->params['backup_folder'] . 'db' . DIRECTORY_SEPARATOR);
             $this->getDump();
         }
         $this->addAction(Status::BACKUP_DB_FINISH);
@@ -66,7 +66,7 @@ class Runner
     
     private function getFileProvider()
     {
-        $this->params['destinationName'] = $this->params['backup_folder'] . '/db/' . $this->destinationPath . '.sql';
+        $this->params['destinationName'] = $this->params['backup_folder'] . 'db' . DIRECTORY_SEPARATOR . $this->destinationPath . '.sql';
         $fileProvider = '\Backup\FileProvider\\' . ($this->isLocal() ? 'Local' : 'Remote');
         return new $fileProvider($this->params, $this->callback);
     }
@@ -88,6 +88,7 @@ class Runner
     
     private function createFolders($folder)
     {
+        // echo $folder, PHP_EOL;
         if (!is_dir($folder)) {
             mkdir($folder, self::DIR_PERMISSION, true);
         }
@@ -121,7 +122,8 @@ class Runner
         $output = shell_exec(__DIR__ . '/sh/copyWithHardLinks.sh '
             . '"' . $this->params['backup_folder'] . $this->lastPath . '"'
             . ' "' . $this->params['backup_folder'] . $this->destinationPath . '"');
-        $this->addAction(Status::BACKUP_FILES_HLCOPY_FINISH, $output);
+        $this->addAction(Status::BACKUP_FILES_HLCOPY_FINISH);
+        // $this->addAction(Status::BACKUP_FILES_HLCOPY_FINISH, $output);
     }
 
     /**
@@ -183,8 +185,8 @@ class Runner
      */
     private function rsync()
     {
-        $this->addAction(Status::BACKUP_FILES_RSYNC_START);
         $rsyncCommand = $this->getRsyncCommand();
+        $this->addAction(Status::BACKUP_FILES_RSYNC_START, $rsyncCommand);
         $output = shell_exec($rsyncCommand);
         $this->addAction(Status::BACKUP_FILES_RSYNC_FINISH, $output);
     }
@@ -194,27 +196,32 @@ class Runner
      */
     private function getRsyncCommand()
     {
+        // echo __DIR__ . '/../exclude.txt ';
+
         /**
          * для localhost не нужно подключение по ssh
          */
         if ($this->isLocal()) {
-            return 'rsync -aLz --delete-after --exclude-from exclude.txt '
+            return 'rsync -aLz --delete-after '
+                . '--exclude-from ' . __DIR__ . '/../exclude.txt '
+                . $this->params['path'] . DIRECTORY_SEPARATOR . ' '
+                . '"' . $this->params['backup_folder'] . $this->destinationPath . '"';
+            }
+            
+            // Для хостов, которые не поддерживают аутентификацию по ключу воспользуемся паролем
+            $prefix = (empty($this->params['password']))
+            ? ''
+            : 'sshpass -p ' . $this->params['password'] . ' ';
+            
+            return $prefix . 'rsync -aLz --delete-after '
+                . '--exclude-from ' . __DIR__ . '/../exclude.txt '
+                . '-e "ssh -p '
+                . $this->params['port'] . ' -o StrictHostKeychecking=no" '
+                . $this->params['user'] . '@'
+                . $this->params['host'] . ':'
                 . $this->params['path'] . DIRECTORY_SEPARATOR . ' '
                 . '"' . $this->params['backup_folder'] . $this->destinationPath . '"';
         }
-        
-        // Для хостов, которые не поддерживают аутентификацию по ключу воспользуемся паролем
-        $prefix = (empty($this->params['password']))
-            ? ''
-            : 'sshpass -p ' . $this->params['password'] . ' ';
-
-        return $prefix . 'rsync -aLz --delete-after --exclude-from exclude.txt -e "ssh -p '
-            . $this->params['port'] . '" '
-            . $this->params['user'] . '@'
-            . $this->params['host'] . ':'
-            . $this->params['path'] . DIRECTORY_SEPARATOR . ' '
-            . '"' . $this->params['backup_folder'] . $this->destinationPath . '"';
-    }
 
     /**
      * Добавляет action в целях тестирования

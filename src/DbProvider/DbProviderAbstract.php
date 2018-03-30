@@ -22,17 +22,17 @@ class DbProviderAbstract implements DbProviderInterface
     public function getDump()
     {
         $this->getDbCredentials();
-        $this->callbackExec(Status::BACKUP_DB_DUMP_START);
         $this->backup();
-        $this->callbackExec(Status::BACKUP_DB_DUMP_FINISH);
         $this->fileProvider->moveDumpToDestination($this->getDumpName(), $this->getDestinationName());
     }
     
     protected function getDbCredentials()
     {
+        $this->callbackExec(Status::BACKUP_DB_CREDENTIALS_START);
         $path = $this->getPathToConfig();
         $file = $this->fileProvider->getConfigFile($path);
         $this->parseConfigFile($file);
+        $this->callbackExec(Status::BACKUP_DB_CREDENTIALS_FINISH);
         return $this->dbCredentials;
     }
     
@@ -48,8 +48,10 @@ class DbProviderAbstract implements DbProviderInterface
     
     protected function backup()
     {
+        $this->callbackExec(Status::BACKUP_DB_DUMP_START);
         $dumpCommand = $this->getDumpCommand();
         $this->fileProvider->dumpDB($dumpCommand, $this->getDumpName());
+        $this->callbackExec(Status::BACKUP_DB_DUMP_FINISH);
     }
     
     protected function getDumpName()

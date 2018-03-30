@@ -40,7 +40,7 @@ class Remote extends FileProviderAbstract
     private function getSSH()
     {
         $connection = new SSH2($this->params['host'], $this->params['port']);
-        $this->login($connection);
+        $this->auth($connection);
         return $connection;
     }
 
@@ -50,10 +50,10 @@ class Remote extends FileProviderAbstract
             return;
         }
         $this->sftp = new SFTP($this->params['host'], $this->params['port']);
-        $this->login($this->sftp);
+        $this->auth($this->sftp);
     }
     
-    private function login($connection)
+    private function auth($connection)
     {
         if (empty($this->params['password'])) {
             $key = new RSA();
@@ -61,6 +61,13 @@ class Remote extends FileProviderAbstract
             return $connection->login($this->params['user'], $key);
         }
         return $connection->login($this->params['user'], $this->params['password']);
+    }
+
+    private function login($connection, $login, $key)
+    {
+        if (!$connection->login($login, $key)) {
+            throw new \Exception('Not authenticated!');
+        }
     }
     
     protected function putDumpToDestination(String $source, String $destination)
