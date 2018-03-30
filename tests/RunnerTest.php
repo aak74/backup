@@ -17,8 +17,8 @@ class RunnerTest extends \PHPUnit\Framework\TestCase
             'host' => 'example.com',
             'user' => 'user',
             'port' => '22',
-            'project_path' => '/var/www/html',
-            'project_name' => 'some-project',
+            'path' => '/var/www/html',
+            'name' => 'some-project',
             'dump_name' => 'db.sql',
             'php' => 'php',
             'public_key' => '~/.ssh/id_rsa.pub',
@@ -149,8 +149,8 @@ class RunnerTest extends \PHPUnit\Framework\TestCase
             new \Backup\ConfigReader\ConfigReaderArray([
                 'backup_path' => '/mnt/b/backup',
                 'host' => 'localhost',
-                'project_path' => '/var/www/html',
-                'project_name' => 'some-project',
+                'path' => '/var/www/html',
+                'name' => 'some-project',
             ])
         );
         

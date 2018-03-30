@@ -4,12 +4,12 @@ return [
     'host' => 'example.com',
     'user' => 'user',
     'port' => '22',
-    'project_path' => '/var/www/html',
-    'project_name' => 'some-project',
+    'path' => '/var/www/html',
+    'name' => 'some-project',
     'database' => [
         'provider' => 'bitrix',
     ],
     'php' => 'php',
-    'public_key' => '~/.ssh/id_rsa.pub',
-    'private_key' => '~/.ssh/id_rsa'
+    'public_key' => '/home/andrew/.ssh/id_rsa.pub',
+    'private_key' => '/home/andrew/.ssh/id_rsa'
 ];

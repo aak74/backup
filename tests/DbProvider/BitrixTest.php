@@ -9,7 +9,7 @@ class BitrixTest extends \PHPUnit\Framework\TestCase
     public function setUp()
     {
         $params = [
-            'project_path' => '/var/www/html',
+            'path' => '/var/www/html',
         ];
         
         $this->testingClass = new \Backup\DbProvider\Bitrix(

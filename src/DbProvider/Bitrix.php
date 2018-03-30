@@ -2,8 +2,6 @@
 
 namespace Backup\DbProvider;
 
-// use Backup\FileProvider\FileProviderInterface;
-
 /**
  * Драйвер для backup mysql databases
  */
@@ -12,12 +10,11 @@ class Bitrix extends Mysql
 
     protected function getPathToConfig()
     {
-        return $this->params['project_path'] . '/bitrix/.settings.php';
+        return $this->params['path'] . '/bitrix/.settings.php';
     }
 
     protected function parseConfigFile(String $file)
     {
-        // print_r(['parseConfigFile', $file]);
         $config = include("data://," . $file);
         $connections = $config['connections'];
         if (empty($connections)) {

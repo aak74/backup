@@ -37,7 +37,7 @@ class BitrixRunner
             . $params['login']
             . ' -p"' . $params['password'] . '" ' . $params['database']
             . ' > '
-            . $this->params['project_path'] . '/' . $this->params['dump_name'];
+            . $this->params['path'] . '/' . $this->params['dump_name'];
     }
 
     private function backupDB($dumpCommand)
@@ -70,7 +70,7 @@ class BitrixRunner
     private function getFileSize()
     {
         $sftp = ssh2_sftp($this->connection);
-        $dumpName = $this->params['project_path'] . '/' . $this->params['dump_name'];
+        $dumpName = $this->params['path'] . '/' . $this->params['dump_name'];
         $stat = ssh2_sftp_stat($sftp, $dumpName);
         return ($stat && $stat['size'] > 0)
             ? $stat['size']
@@ -91,10 +91,10 @@ class BitrixRunner
 
     private function getPath($filename)
     {
-        if ($this->params['project_path'][0] == '~') {
-            return '.' . substr($this->params['project_path'], 1) . '/' . $filename;
+        if ($this->params['path'][0] == '~') {
+            return '.' . substr($this->params['path'], 1) . '/' . $filename;
         }
-        return $this->params['project_path'] . '/' . $filename;
+        return $this->params['path'] . '/' . $filename;
     }
 
     private function connect()
@@ -133,8 +133,8 @@ class BitrixRunner
             . $this->params['port'] . '" '
             . $this->params['user'] . '@'
             . $this->params['host'] . ':'
-            . $this->params['project_path'] . '/ '
+            . $this->params['path'] . '/ '
             . $this->params['backup_path'] . '/'
-            . $this->params['project_name'];
+            . $this->params['name'];
     }
 }

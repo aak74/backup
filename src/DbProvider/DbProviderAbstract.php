@@ -35,7 +35,7 @@ class DbProviderAbstract implements DbProviderInterface
     
     protected function getPathToConfig()
     {
-        return $this->params['project_path'];
+        return $this->params['path'];
     }
     
     protected function parseConfigFile(String $file)
@@ -51,8 +51,8 @@ class DbProviderAbstract implements DbProviderInterface
     
     protected function getDumpName()
     {
-        return '/tmp/dump-' . $this->params['project_name'] . '.sql';
-        return '"dump-' . $this->params['project_name'] . '.sql"';
+        return '/tmp/dump-' . $this->params['name'] . '.sql';
+        return '"dump-' . $this->params['name'] . '.sql"';
     }
     
     protected function getDestinationName()

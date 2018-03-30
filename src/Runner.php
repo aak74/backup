@@ -19,18 +19,21 @@ class Runner
 
     public function __construct(ConfigReaderInterface $reader)
     {
+        // echo '3', PHP_EOL;
         $this->params = $reader->getConfig();
         $this->params['backup_folder'] = $this->params['backup_path']
-        . DIRECTORY_SEPARATOR . $this->params['project_name'] . DIRECTORY_SEPARATOR;
+            . DIRECTORY_SEPARATOR . $this->params['name'] . DIRECTORY_SEPARATOR;
+        // print_r($this->params);
+        // echo '4', PHP_EOL;
     }
 
     public function backup()
     {
-        $this->calcDestinationPath();
         // print_r($this->params);
-        // die;
+        // return;
+        $this->calcDestinationPath();
         $this->backupDB();
-        $this->backupFiles();
+        // $this->backupFiles();
     }
 
     private function backupDB()
@@ -84,7 +87,7 @@ class Runner
     private function getSourcePath()
     {
         // $this->sourcePath = $this->calcLastPath($this->params['backup_folder']);
-        $this->sourcePath = $this->params['project_path'];
+        $this->sourcePath = $this->params['path'];
         return $this->sourcePath;
     }
 
@@ -177,7 +180,7 @@ class Runner
          */
         if ($this->isLocal()) {
             return 'rsync -aLz --delete-after --exclude-from exclude.txt '
-                . $this->params['project_path'] . DIRECTORY_SEPARATOR . ' '
+                . $this->params['path'] . DIRECTORY_SEPARATOR . ' '
                 . '"' . $this->params['backup_folder'] . $this->destinationPath . '"';
         }
         
@@ -190,7 +193,7 @@ class Runner
             . $this->params['port'] . '" '
             . $this->params['user'] . '@'
             . $this->params['host'] . ':'
-            . $this->params['project_path'] . DIRECTORY_SEPARATOR . ' '
+            . $this->params['path'] . DIRECTORY_SEPARATOR . ' '
             . '"' . $this->params['backup_folder'] . $this->destinationPath . '"';
     }
 

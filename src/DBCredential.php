@@ -10,7 +10,7 @@ class DBCredential
     public function getDbCredentials($connection)
     {
         $sftp = ssh2_sftp($connection);
-        $remoteFile = $this->params['project_path'] . '/bitrix/.settings.php';
+        $remoteFile = $this->params['path'] . '/bitrix/.settings.php';
         $stream = fopen("ssh2.sftp://$sftp$remoteFile", 'r');
         $content = stream_get_contents($stream);
         fclose($stream);

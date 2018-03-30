@@ -5,7 +5,7 @@ return array_merge(
         'host' => 'example.com',
         'user' => 'bitrix',
         'port' => '2222',
-        'project_path' => '/var/www/html',
-        'project_name' => 'example',
+        'path' => '/var/www/html',
+        'name' => 'example',
     ]
 );

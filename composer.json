@@ -12,7 +12,8 @@
     ],
     "require": {
         "php": ">=5.4.0",
-        "nesbot/carbon": "^1.22"
+        "nesbot/carbon": "^1.22",
+        "phpseclib/phpseclib": "~2.0"
     },
     "require-dev": {
         "phpunit/phpunit": "6.*",

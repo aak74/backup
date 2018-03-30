@@ -12,8 +12,8 @@ return array_merge(
         'host' => 'example.com',
         'user' => 'bitrix',
         'port' => '2222',
-        'project_path' => '/var/www/html',
-        'project_name' => 'example',
+        'path' => '/var/www/html',
+        'name' => 'example',
         'dump_name' => 'db.sql',
     ]
 );
@@ -28,13 +28,6 @@ php run.php project
 
 ## Установка
 Backup делается через ssh. Рекомендуется сгенерировать ssh ключ `ssh-keygen`. И записать публичный ключ на удаленный сервер `ssh-copy-id`.
-
-Для работы приложения необходимо установить недостающие пакеты.
-
-Для работы с ssh из php используется библиотека ssh2.
-```
-sudo apt-get install php-ssh2
-```
 
 На некоторых серверах нельзя сохранить ssh ключ. Поэтому доступ туда возможен только с помощью пароля. Для backup с помощью пароля нужно дополнительно установить:
 ```
